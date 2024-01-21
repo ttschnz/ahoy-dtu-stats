@@ -1,0 +1,17 @@
+# For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+
+services:
+  crawler:
+    build:
+      context: .
+      target: final
+    environment:
+      - INVERTER_ENDPOINT=http://ahoy-dtu.fritz.box
+      - CRAWLING_INTERVAL=3600
+      - RUST_LOG=info
+      - LOGGING_TARGET=stdout
+      # - LOGGING_TARGET=/output/log
+      - OUT_DIR=/output/data
+    volumes:
+      - ./out:/output

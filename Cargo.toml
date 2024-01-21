@@ -1,0 +1,19 @@
+[package]
+name = "ahoy-dtu-stats"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4.31", features = ["serde"] }
+csv = "1.3.0"
+dotenv = "0.15.0"
+env_logger = "0.11.0"
+lazy_static = "1.4.0"
+log = "0.4.20"
+openweathermap = "0.2.4"
+reqwest = "0.11.23"
+serde = { version = "1.0.195", features = ["derive"] }
+serde_json = "1.0.111"
+tokio = { version = "1.35.1", features = ["macros"] }
