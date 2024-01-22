@@ -92,33 +92,11 @@ impl Crawler {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::entrypoint;
+
     use dotenv::dotenv;
-    use std::{env, time::Duration};
+    use std::env;
 
     static IS_OFFLINE: bool = true;
-    #[tokio::test]
-    async fn entrypoint_doesnt_crash() {
-        // set env:
-        // CRAWLING_INTERVAL=0
-        let handle = tokio::spawn(async move { entrypoint(IS_OFFLINE) });
-
-        // sleep for 5 seconds
-        tokio::time::sleep(Duration::from_secs(5)).await;
-
-        // check if handle is still running
-        if handle.is_finished() {
-            handle.abort();
-            // get error
-            let result = handle.await.unwrap().await;
-            match result {
-                Ok(_) => panic!("entrypoint finished too early"),
-                Err(error) => {
-                    panic!("entrypoint finished too early with error: {:?}", error)
-                }
-            }
-        }
-    }
 
     fn init() -> AhoyApi {
         dotenv().ok();

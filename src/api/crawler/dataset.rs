@@ -15,7 +15,7 @@ pub struct Dataset {
 }
 
 impl Dataset {
-    pub fn new(field_names: &Vec<String>, field_units: &Vec<String>) -> Self {
+    pub fn new(field_names: &[String], field_units: &[String]) -> Self {
         let mut fields = Vec::new();
         for (index, fieldname) in field_names.iter().enumerate() {
             fields.push(EmptyField {
@@ -64,26 +64,22 @@ impl Dataset {
                 )
                 .map_err(|err| ErrorKind::CouldNotWriteToCsv(err.to_string()))?;
         }
-        loop {
-            match self.values.first() {
-                Some((row, datetime)) => {
-                    writer
-                        .write_record(
-                            once(datetime.format("%F %T").to_string()).chain(
-                                row.iter()
-                                    .map(|value| match value {
-                                        Some(value) => value.to_string(),
-                                        None => "".to_string(),
-                                    })
-                                    .collect::<Vec<_>>(),
-                            ),
-                        )
-                        .map_err(|err| ErrorKind::CouldNotWriteToCsv(err.to_string()))?;
-                    self.values.drain(..1);
-                }
-                None => break,
-            }
+        while let Some((row, datetime)) = self.values.first() {
+            writer
+                .write_record(
+                    once(datetime.format("%F %T").to_string()).chain(
+                        row.iter()
+                            .map(|value| match value {
+                                Some(value) => value.to_string(),
+                                None => "".to_string(),
+                            })
+                            .collect::<Vec<_>>(),
+                    ),
+                )
+                .map_err(|err| ErrorKind::CouldNotWriteToCsv(err.to_string()))?;
+            self.values.drain(..1);
         }
+
         Ok(())
     }
 }

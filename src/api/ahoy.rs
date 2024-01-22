@@ -128,19 +128,19 @@ impl AhoyApi {
     }
 
     pub async fn get_inverter_list(&self) -> Result<InverterList, ErrorKind> {
-        let path = format!("/api/inverter/list");
+        let path = "/api/inverter/list".to_string();
         let res = self.request(path).await?;
         from_str(&res).map_err(|_| ErrorKind::ParsingError)
     }
 
     pub async fn get_live(&self) -> Result<Live, ErrorKind> {
-        let path = format!("/api/live");
+        let path = "/api/live".to_string();
         let res = self.request(path).await?;
         from_str(&res).map_err(|_| ErrorKind::ParsingError)
     }
 
     pub async fn get_index(&self) -> Result<Index, ErrorKind> {
-        let path = format!("/api/index");
+        let path = "/api/index".to_string();
         let res = self.request(path).await?;
         from_str(&res).map_err(|_| ErrorKind::ParsingError)
     }
@@ -269,6 +269,7 @@ mod test {
 
     static IS_OFFLINE: bool = true;
     fn init() -> Result<AhoyApi, ErrorKind> {
+        dotenv::dotenv().ok();
         let mut api = AhoyApi::from_env()?;
         api.set_offline_mode(IS_OFFLINE);
         Ok(api)

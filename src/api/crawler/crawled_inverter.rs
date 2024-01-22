@@ -62,7 +62,7 @@ impl CrawledInverter {
 
     pub async fn save_to_csv(&mut self, folder_path: &str) -> Result<(), ErrorKind> {
         for (channel_index, dataset) in self.channel_datasets.iter_mut().enumerate() {
-            dataset.save_to_csv(&folder_path, &self.name, channel_index as u8)?;
+            dataset.save_to_csv(folder_path, &self.name, channel_index as u8)?;
         }
         Ok(())
     }

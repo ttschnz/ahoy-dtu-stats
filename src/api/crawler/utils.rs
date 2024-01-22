@@ -62,25 +62,25 @@ async fn _entrypoint(_offline: bool) -> Result<(), ErrorKind> {
             error!("Logging to {}", target);
             if target == "stdout" {
                 env_logger::init();
+            } else if let Ok(target_file) = create_file_with_full_path(target, true, true) {
+                let boxed = Box::new(target_file);
+                Builder::new()
+                    .target(Target::Pipe(boxed))
+                    .filter(None, LevelFilter::Debug)
+                    .format(|buf, record| {
+                        writeln!(
+                            buf,
+                            "[{} {} {}:{}] {}",
+                            Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
+                            record.level(),
+                            record.module_path().unwrap_or("unknown module"),
+                            record.line().unwrap_or(0),
+                            record.args()
+                        )
+                    })
+                    .init();
             } else {
-                if let Ok(target_file) = create_file_with_full_path(target, true, true) {
-                    let boxed = Box::new(target_file);
-                    Builder::new()
-                        .target(Target::Pipe(boxed))
-                        .filter(None, LevelFilter::Debug)
-                        .format(|buf, record| {
-                            writeln!(
-                                buf,
-                                "[{} {} {}:{}] {}",
-                                Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),
-                                record.level(),
-                                record.module_path().unwrap_or("unknown module"),
-                                record.line().unwrap_or(0),
-                                record.args()
-                            )
-                        })
-                        .init();
-                }
+                env_logger::init();
             }
         }
         Err(_) => {
