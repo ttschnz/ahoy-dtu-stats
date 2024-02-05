@@ -65,7 +65,7 @@ impl CrawledInverter {
             dataset.save_to_csv(folder_path, &self.name, channel_index as u8)?;
         }
         self.summary_dataset
-            .save_to_csv(folder_path, &self.name, 9)?;
+            .save_to_csv(folder_path, &self.name, "summary")?;
         Ok(())
     }
 

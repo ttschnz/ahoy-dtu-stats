@@ -46,9 +46,14 @@ impl Dataset {
         &mut self,
         folder_path: &str,
         inverter_name: &str,
-        channel_index: u8,
+        channel_index: impl ToString,
     ) -> Result<(), ErrorKind> {
-        let csv_path = format!("{}/{}/{}.csv", folder_path, inverter_name, channel_index);
+        let csv_path = format!(
+            "{}/{}/{}.csv",
+            folder_path,
+            inverter_name,
+            channel_index.to_string()
+        );
         let file = create_file_with_full_path(csv_path, true, true)?;
         let metadata = file
             .metadata()
