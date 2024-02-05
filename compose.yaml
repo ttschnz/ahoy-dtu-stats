@@ -3,15 +3,13 @@
 
 services:
   crawler:
-    build:
-      context: .
-      target: final
+    image: ghcr.io/ttschnz/ahoy-dtu-stats:master
     environment:
       - INVERTER_ENDPOINT=http://ahoy-dtu.fritz.box
-      - CRAWLING_INTERVAL=3600
-      - RUST_LOG=info
-      - LOGGING_TARGET=stdout
-      # - LOGGING_TARGET=/output/log
+      - CRAWLING_INTERVAL=30
+      - RUST_LOG=debug
+      # - LOGGING_TARGET=stdout
+      - LOGGING_TARGET=/output/log
       - OUT_DIR=/output/data
     volumes:
       - ./out:/output
