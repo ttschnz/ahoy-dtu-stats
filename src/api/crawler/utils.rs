@@ -81,10 +81,12 @@ async fn _entrypoint(_offline: bool) -> Result<(), ErrorKind> {
                     .init();
             } else {
                 env_logger::init();
+                error!("Error opening log file, logging to stdout instead");
             }
         }
         Err(_) => {
             env_logger::init();
+            error!("No LOGGING_TARGET specified, logging to stdout");
         }
     }
     // if LOGGING_TARGET == "stdout" -> log to stdout
