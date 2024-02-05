@@ -3,7 +3,7 @@
 
 services:
   crawler:
-    image: ghcr.io/ttschnz/ahoy-dtu-stats:master
+    image: ghcr.io/ttschnz/ahoy-dtu-stats:db_connector
     environment:
       - INVERTER_ENDPOINT=http://ahoy-dtu.fritz.box
       - CRAWLING_INTERVAL=30
