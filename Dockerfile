@@ -52,9 +52,9 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
+RUN mkdir output && chown appuser:appuser output
 
 USER appuser
-
 
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/crawler /bin/

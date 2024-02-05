@@ -59,7 +59,7 @@ async fn _entrypoint(_offline: bool) -> Result<(), ErrorKind> {
 
     match env::var("LOGGING_TARGET") {
         Ok(target) => {
-            error!("Logging to {}", target);
+            info!("Logging to {}", target);
             if target == "stdout" {
                 env_logger::init();
             } else if let Ok(target_file) = create_file_with_full_path(target, true, true) {
