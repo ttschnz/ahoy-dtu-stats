@@ -7,6 +7,7 @@ pub enum ErrorKind {
     CouldNotCreateFolder(String),
     CouldNotCreateFile(String),
     CouldNotOpenFile(String),
-
+    DBConnectionFailed(String),
+    CouldNotWriteToDB(String),
     CouldNotWriteToCsv(String),
 }

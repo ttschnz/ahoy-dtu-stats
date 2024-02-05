@@ -1,6 +1,8 @@
 use crate::{AhoyApi, Dataset, ErrorKind, Inverter, UnitValue};
 
 use chrono::{DateTime, Local};
+#[cfg(feature = "db")]
+use sqlx::MySqlPool;
 
 use std::{collections::HashMap, env, time::Duration};
 
@@ -66,6 +68,19 @@ impl CrawledInverter {
         }
         self.summary_dataset
             .save_to_csv(folder_path, &self.name, "summary")?;
+        Ok(())
+    }
+
+    #[cfg(feature = "db")]
+    pub async fn save_to_db(&mut self, db_connection: &MySqlPool) -> Result<(), ErrorKind> {
+        for (channel_index, dataset) in self.channel_datasets.iter_mut().enumerate() {
+            dataset
+                .save_to_db(db_connection, &self.name, channel_index as u8)
+                .await?;
+        }
+        self.summary_dataset
+            .save_to_db(db_connection, &self.name, "summary")
+            .await?;
         Ok(())
     }
 

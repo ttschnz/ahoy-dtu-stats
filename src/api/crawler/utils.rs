@@ -90,6 +90,10 @@ async fn _entrypoint(_offline: bool) -> Result<(), ErrorKind> {
         }
     }
     // if LOGGING_TARGET == "stdout" -> log to stdout
+    #[cfg(feature = "db")]
+    info!("outputting to database");
+    #[cfg(not(feature = "db"))]
+    info!("outputting to csv files");
 
     info!("Starting crawler");
 

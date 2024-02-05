@@ -3,6 +3,13 @@ name = "ahoy-dtu-stats"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+db = ["sqlx/mysql"]
+
+[[bin]]
+name = "ahoy-dtu-stats"
+required-features = ["db"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -16,4 +23,8 @@ openweathermap = "0.2.4"
 reqwest = "0.11.23"
 serde = { version = "1.0.195", features = ["derive"] }
 serde_json = "1.0.111"
+sqlx = { version = "0.7.3", features = ["mysql"] }
 tokio = { version = "1.35.1", features = ["macros"] }
+
+[dev-dependencies]
+testcontainers = "0.15.0"

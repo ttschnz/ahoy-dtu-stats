@@ -10,6 +10,6 @@ services:
       - RUST_LOG=debug
       # - LOGGING_TARGET=stdout
       - LOGGING_TARGET=/output/log
-      - OUT_DIR=/output/data
+      - DB_URL=mysql://root:password@hostname:3306/db_name
     volumes:
       - ./out:/output

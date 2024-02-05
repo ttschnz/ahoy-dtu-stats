@@ -2,6 +2,8 @@ use crate::{AhoyApi, CrawledInverter, ErrorKind};
 
 use chrono::{DateTime, Local};
 
+#[cfg(feature = "db")]
+use sqlx::MySqlPool;
 use std::{
     collections::{hash_map::Entry, HashMap},
     env,
@@ -61,11 +63,32 @@ impl Crawler {
         Ok(())
     }
 
+    #[cfg(feature = "db")]
+    pub async fn save_to_db(&mut self) -> Result<(), ErrorKind> {
+        let db_url = env::var("DB_URL").expect("FATAL: DB_URL must be set.");
+        let mut connection = MySqlPool::connect(&db_url)
+            .await
+            .map_err(|e| ErrorKind::DBConnectionFailed(e.to_string()))?;
+        for inverter in self.inverters.values_mut() {
+            inverter.save_to_db(&mut connection).await?;
+        }
+        Ok(())
+    }
+
     pub async fn crawl_all_due_inverters(
         &mut self,
-        sync_to_file: bool,
+        sync_to_db: bool,
     ) -> Result<Option<DateTime<Local>>, ErrorKind> {
+        #[cfg(not(feature = "db"))]
         let out_dir = env::var("OUT_DIR").unwrap_or("./out".to_string());
+
+        #[cfg(feature = "db")]
+        let db_url = env::var("DB_URL").expect("FATAL: DB_URL must be set.");
+        #[cfg(feature = "db")]
+        let mut connection = MySqlPool::connect(&db_url)
+            .await
+            .map_err(|e| ErrorKind::DBConnectionFailed(e.to_string()))?;
+
         let mut due_inverters = vec![];
         let mut next_due: Option<DateTime<Local>> = None;
         for (index, inverter) in &self.inverters {
@@ -77,7 +100,10 @@ impl Crawler {
             let inverter = self.get_inverter(inverter_id).await?;
             inverter.crawl().await?;
 
-            if sync_to_file {
+            if sync_to_db {
+                #[cfg(feature = "db")]
+                inverter.save_to_db(&mut connection).await?;
+                #[cfg(not(feature = "db"))]
                 inverter.save_to_csv(&out_dir).await?;
             }
             if let Some(next_crawl) = inverter.next_crawl_at {
