@@ -2,9 +2,8 @@ use crate::{AhoyApi, CrawledInverter, ErrorKind};
 
 use chrono::{DateTime, Local};
 
-use sqlx::mysql::MySqlConnectOptions;
 #[cfg(feature = "db")]
-use sqlx::MySqlPool;
+use sqlx::{mysql::MySqlConnectOptions, MySqlPool};
 use std::{
     collections::{hash_map::Entry, HashMap},
     env,
