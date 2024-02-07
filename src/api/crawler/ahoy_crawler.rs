@@ -87,15 +87,19 @@ impl Crawler {
             let db_host = env::var("DB_HOST").expect("FATAL: DB_URL must be set.");
             let db_name = env::var("DB_NAME").expect("FATAL: DB_NAME must be set.");
             let db_user = env::var("DB_USER").expect("FATAL: DB_USER must be set.");
-            let db_pass = env::var("DB_PASS").expect("FATAL: DB_PASS must be set.");
+            let db_pass = env::var("DB_PASS").ok();
             let db_port = env::var("DB_PORT").expect("FATAL: DB_PORT must be set.");
 
-            let options = MySqlConnectOptions::new()
+            let mut options = MySqlConnectOptions::new()
                 .host(&db_host)
                 .database(&db_name)
                 .username(&db_user)
-                .password(&db_pass)
                 .port(db_port.parse::<u16>().unwrap());
+
+            if let Some(pass) = db_pass {
+                options = options.password(&pass);
+            }
+
             MySqlPool::connect_with(options).await
         }
         .map_err(|e| ErrorKind::DBConnectionFailed(e.to_string()))?;

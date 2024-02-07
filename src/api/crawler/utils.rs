@@ -160,3 +160,35 @@ async fn _entrypoint(_offline: bool) -> Result<(), ErrorKind> {
         }
     }
 }
+
+#[cfg(all(test, feature = "db"))]
+mod test {
+    use std::env;
+    use testcontainers::clients;
+    use testcontainers_modules::mysql;
+
+    use crate::{AhoyApi, Crawler};
+
+    #[tokio::test]
+    async fn test_db_store() {
+        env_logger::init();
+        let docker = clients::Cli::default();
+        let mysql_instance = docker.run(mysql::Mysql::default());
+
+        let port = mysql_instance.get_host_port_ipv4(3306);
+
+        env::set_var("DB_HOST", "localhost");
+        env::set_var("DB_PORT", port.to_string());
+        env::set_var("DB_USER", "root");
+        // env::set_var("DB_PASS", "");
+        env::set_var("DB_NAME", "test");
+
+        let mut api = AhoyApi::new("some_host".to_string());
+        api.set_offline_mode(true);
+        let mut crawler = Crawler::from(api);
+
+        crawler.init().await.unwrap();
+
+        crawler.crawl_all_due_inverters(true).await.unwrap();
+    }
+}

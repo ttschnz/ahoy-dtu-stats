@@ -101,6 +101,9 @@ impl Dataset {
     ) -> Result<(), ErrorKind> {
         // if channel_index is u8, then it is a channel, otherwise it is a summary
 
+        use log::debug;
+        use sqlx::Execute;
+
         let table_name = format!("{}::{}", inverter_name, channel_index.to_string());
         let fields = if type_name::<T>() == "u8" {
             vec![
@@ -132,50 +135,59 @@ impl Dataset {
         };
 
         let create_table_query = format!(
-            "CREATE TABLE IF NOT EXISTS ? (
+            "CREATE TABLE IF NOT EXISTS `{}` (
                 {},
                 PRIMARY KEY (`{}`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
+            )",
+            table_name,
             fields
                 .iter()
-                .map(|(name, datatype)| format!("`{}` {} NOT NULL", name, datatype))
+                .map(|(name, datatype)| format!("`{}` {}", name, datatype))
                 .collect::<Vec<_>>()
-                .join(",\n"),
+                .join(","),
             fields[0].0
         );
 
+        debug!("running query: {}", create_table_query);
+
         sqlx::query(&create_table_query)
-            .bind(&table_name)
+            // .bind(&table_name)
             .execute(db_pool)
             .await
             .map_err(|err| ErrorKind::CouldNotWriteToDB(err.to_string()))?;
 
         let insert = format!(
-            "INSERT INTO ? ({}) VALUES ({})",
+            "INSERT INTO `{}` ({}) VALUES {}",
+            table_name,
             fields
                 .iter()
                 .map(|(name, _)| *name)
                 .collect::<Vec<_>>()
                 .join(", "),
             self.values
-                .iter()
-                .map(|_| format!(
-                    "({})",
-                    fields.iter().map(|_| "?").collect::<Vec<_>>().join(", ")
+                .drain(..)
+                .map(|(row, timestamp)| format!(
+                    "(\"{}\", {})",
+                    timestamp.format("%F %T"),
+                    row.iter()
+                        .map(|field| {
+                            match field {
+                                Some(value) => value.to_string(),
+                                None => "NULL".to_string(),
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 ))
                 .collect::<Vec<_>>()
                 .join(", ")
         );
-        let mut query: Query<'_, MySql, MySqlArguments> = sqlx::query(&insert).bind(&table_name);
 
-        while let Some((row, datetime)) = self.values.first() {
-            query = query.bind(datetime.format("%F %T").to_string());
-            for value in row {
-                query = query.bind(value.clone());
-            }
-            self.values.drain(..1);
-        }
+        debug!("running query: {}", insert);
 
+        let query: Query<'_, MySql, MySqlArguments> = sqlx::query(&insert);
+
+        debug!("finished query: {}", query.sql());
         query
             .execute(db_pool)
             .await
