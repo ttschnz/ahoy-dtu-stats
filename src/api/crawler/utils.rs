@@ -1,6 +1,6 @@
 use crate::{AhoyApi, Crawler, ErrorKind};
 
-use chrono::Local;
+use chrono::{Local, Utc};
 
 use dotenv::dotenv;
 use env_logger::{Builder, Target};
@@ -123,13 +123,16 @@ async fn _entrypoint(_offline: bool) -> Result<(), ErrorKind> {
                     tokio::time::sleep(default_interval).await;
                 }
             }
-
-            let mut next_sync: u8 = 4;
+            let write_interval = env::var("WRITE_INTERVAL")
+                .unwrap_or("5".to_string())
+                .parse::<u8>()
+                .unwrap_or(5);
+            let mut next_sync: u8 = write_interval;
             info!("Crawler initialized");
             loop {
-                match crawler.crawl_all_due_inverters(next_sync == 0).await {
+                match crawler.crawl_all_due_inverters(next_sync == 1).await {
                     Ok(Some(closest_due)) => {
-                        if let Ok(sleep_duration) = (closest_due - Local::now()).to_std() {
+                        if let Ok(sleep_duration) = (closest_due - Utc::now()).to_std() {
                             debug!(
                                 "Successfully crawled all due inverters, sleeping {:?}",
                                 sleep_duration
@@ -147,8 +150,8 @@ async fn _entrypoint(_offline: bool) -> Result<(), ErrorKind> {
                     }
                     Err(e) => error!("Error: {:?}", e),
                 }
-                if next_sync == 0 {
-                    next_sync = 4;
+                if next_sync == 1 {
+                    next_sync = write_interval;
                 } else {
                     next_sync -= 1;
                 }

@@ -1,7 +1,8 @@
 use crate::{AhoyApi, CrawledInverter, ErrorKind};
 
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Utc};
 
+use log::debug;
 #[cfg(feature = "db")]
 use sqlx::{mysql::MySqlConnectOptions, MySqlPool};
 use std::{
@@ -78,34 +79,12 @@ impl Crawler {
     pub async fn crawl_all_due_inverters(
         &mut self,
         sync_to_db: bool,
-    ) -> Result<Option<DateTime<Local>>, ErrorKind> {
+    ) -> Result<Option<DateTime<Utc>>, ErrorKind> {
         #[cfg(not(feature = "db"))]
         let out_dir = env::var("OUT_DIR").unwrap_or("./out".to_string());
 
-        #[cfg(feature = "db")]
-        let mut connection = {
-            let db_host = env::var("DB_HOST").expect("FATAL: DB_URL must be set.");
-            let db_name = env::var("DB_NAME").expect("FATAL: DB_NAME must be set.");
-            let db_user = env::var("DB_USER").expect("FATAL: DB_USER must be set.");
-            let db_pass = env::var("DB_PASS").ok();
-            let db_port = env::var("DB_PORT").expect("FATAL: DB_PORT must be set.");
-
-            let mut options = MySqlConnectOptions::new()
-                .host(&db_host)
-                .database(&db_name)
-                .username(&db_user)
-                .port(db_port.parse::<u16>().unwrap());
-
-            if let Some(pass) = db_pass {
-                options = options.password(&pass);
-            }
-
-            MySqlPool::connect_with(options).await
-        }
-        .map_err(|e| ErrorKind::DBConnectionFailed(e.to_string()))?;
-
         let mut due_inverters = vec![];
-        let mut next_due: Option<DateTime<Local>> = None;
+        let mut next_due: Option<DateTime<Utc>> = None;
         for (index, inverter) in &self.inverters {
             if inverter.is_due() {
                 due_inverters.push(*index);
@@ -117,7 +96,30 @@ impl Crawler {
 
             if sync_to_db {
                 #[cfg(feature = "db")]
+                let mut connection = {
+                    let db_host = env::var("DB_HOST").expect("FATAL: DB_URL must be set.");
+                    let db_name = env::var("DB_NAME").expect("FATAL: DB_NAME must be set.");
+                    let db_user = env::var("DB_USER").expect("FATAL: DB_USER must be set.");
+                    let db_pass = env::var("DB_PASS").ok();
+                    let db_port = env::var("DB_PORT").expect("FATAL: DB_PORT must be set.");
+
+                    let mut options = MySqlConnectOptions::new()
+                        .host(&db_host)
+                        .database(&db_name)
+                        .username(&db_user)
+                        .port(db_port.parse::<u16>().unwrap());
+
+                    if let Some(pass) = db_pass {
+                        options = options.password(&pass);
+                    }
+                    debug!("Connecting to DB");
+                    MySqlPool::connect_with(options).await
+                }
+                .map_err(|e| ErrorKind::DBConnectionFailed(e.to_string()))?;
+                debug!("Syncing to DB");
+                #[cfg(feature = "db")]
                 inverter.save_to_db(&mut connection).await?;
+
                 #[cfg(not(feature = "db"))]
                 inverter.save_to_csv(&out_dir).await?;
             }

@@ -1,6 +1,6 @@
 use crate::{AhoyApi, Dataset, ErrorKind, Inverter, UnitValue};
 
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 #[cfg(feature = "db")]
 use sqlx::MySqlPool;
 
@@ -18,8 +18,8 @@ pub struct CrawledInverter {
     pub is_producing: bool, // InverterIndex.is_producing
     pub is_available: bool, // InverterIndex.is_avail
 
-    pub crawled_at: Option<DateTime<Local>>,
-    pub next_crawl_at: Option<DateTime<Local>>,
+    pub crawled_at: Option<DateTime<Utc>>,
+    pub next_crawl_at: Option<DateTime<Utc>>,
     pub crawling_interval: Option<Duration>,
 
     pub channel_count: u8, // Inverter.channels
@@ -73,11 +73,15 @@ impl CrawledInverter {
 
     #[cfg(feature = "db")]
     pub async fn save_to_db(&mut self, db_connection: &MySqlPool) -> Result<(), ErrorKind> {
+        use log::debug;
+
         for (channel_index, dataset) in self.channel_datasets.iter_mut().enumerate() {
+            debug!("Saving channel {}", channel_index);
             dataset
                 .save_to_db(db_connection, &self.name, channel_index as u8)
                 .await?;
         }
+        debug!("Saving summary");
         self.summary_dataset
             .save_to_db(db_connection, &self.name, "summary")
             .await?;
@@ -106,9 +110,9 @@ impl CrawledInverter {
 
         let interval = self.crawling_interval.unwrap_or(default_interval);
 
-        let crawling_time = Local::now();
+        let crawling_time = Utc::now();
         self.crawled_at = Some(crawling_time);
-        self.next_crawl_at = Some(Local::now() + interval);
+        self.next_crawl_at = Some(Utc::now() + interval);
         self.crawling_interval = Some(interval);
 
         self.summary_dataset.insert_row(&fields[0], &crawling_time);

@@ -15,5 +15,6 @@ services:
       - DB_USER=root
       - DB_PASSWORD=passwd123
       - DB_PORT=3306
+      - WRITE_INTERVAL=1
     volumes:
       - ./out:/output

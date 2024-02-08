@@ -1,7 +1,7 @@
 use super::utils::create_file_with_full_path;
 use crate::{ahoy::UnitValue, error_kind::ErrorKind, EmptyField};
 
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Utc};
 use csv::Writer;
 
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,7 @@ use std::{collections::HashMap, iter::once};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Dataset {
     fields: Vec<EmptyField>,
-    values: Vec<(Vec<Option<f32>>, DateTime<Local>)>,
+    values: Vec<(Vec<Option<f32>>, DateTime<Utc>)>,
 }
 
 impl Dataset {
@@ -37,7 +37,7 @@ impl Dataset {
     pub fn insert_row(
         &mut self,
         data: &HashMap<String, UnitValue<f32>>,
-        timestamp: &DateTime<Local>,
+        timestamp: &DateTime<Utc>,
     ) {
         let mut new_row = Vec::new();
         for key in &self.fields {
@@ -102,8 +102,6 @@ impl Dataset {
         // if channel_index is u8, then it is a channel, otherwise it is a summary
 
         use log::debug;
-        use sqlx::Execute;
-
         let table_name = format!("{}::{}", inverter_name, channel_index.to_string());
         let fields = if type_name::<T>() == "u8" {
             vec![
@@ -156,6 +154,8 @@ impl Dataset {
             .await
             .map_err(|err| ErrorKind::CouldNotWriteToDB(err.to_string()))?;
 
+        debug!("preparing to insert {} rows", self.values.len());
+
         let insert = format!(
             "INSERT INTO `{}` ({}) VALUES {}",
             table_name,
@@ -183,11 +183,11 @@ impl Dataset {
                 .join(", ")
         );
 
-        debug!("running query: {}", insert);
+        // debug!("running query: {}", insert);
 
         let query: Query<'_, MySql, MySqlArguments> = sqlx::query(&insert);
 
-        debug!("finished query: {}", query.sql());
+        // debug!("finished query: {}", query.sql());
         query
             .execute(db_pool)
             .await
